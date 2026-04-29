@@ -20,9 +20,11 @@ services:
       - test-network
 
   nginx:
-    image: ${REGISTRY}/${IMAGE_NAME}/app:${TAG}
+    image: nginx:alpine
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - app
     networks:
