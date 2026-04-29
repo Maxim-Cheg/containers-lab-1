@@ -57,7 +57,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "/static/index.html")
+	http.ServeFile(w, r, "/root/static/index.html")
 }
 func usersHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT id, name FROM users ORDER BY id DESC")

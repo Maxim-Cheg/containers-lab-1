@@ -74,9 +74,6 @@ jobs:
           file: ./nginx/Dockerfile
           push: true
           tags: ${{ steps.meta-nginx.outputs.tags }}
-          labels: ${{ steps.meta-nginx.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Test the built images
         run: |

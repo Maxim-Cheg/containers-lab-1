@@ -5,10 +5,9 @@ RUN apk add --no-cache git
 # Рабочая директория
 WORKDIR /app
 # Копирование файлов зависимостей
-COPY go.mod ./
+COPY go.mod go.sum ./
 # Загрузка зависимостей
 RUN go mod download
-RUN go get containers-lab-1
 # Копирование исходного кода
 COPY . .
 # Сборка приложения
@@ -16,7 +15,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 # Stage 2: Final
 FROM alpine:latest
 # Установка CA сертификатов для HTTPS
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates wget
 # Рабочая директория
 WORKDIR /root/
 # Копирование собранного приложения из builder
