@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -10,7 +9,7 @@ services:
       - test-network
 
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY}/app:sha-${GITHUB_SHA}
+    image: ${REGISTRY}/${REPO_LOWERCASE}/app:${TAG}
     environment:
       DB_HOST: postgres
       DB_PASSWORD: secret
@@ -21,7 +20,7 @@ services:
       - test-network
 
   nginx:
-    image: ghcr.io/${GITHUB_REPOSITORY}/nginx:sha-${GITHUB_SHA}
+    image: ${REGISTRY}/${REPO_LOWERCASE}/nginx:${TAG}
     ports:
       - "80:80"
     depends_on:
