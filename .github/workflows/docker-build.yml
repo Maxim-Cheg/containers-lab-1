@@ -1,4 +1,5 @@
 name: Build and Push Docker Images
+
 on:
   push:
     branches: [ main, master ]
@@ -9,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -25,6 +25,35 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Build Go app locally
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          load: true
+          tags: app:test
+
+      - name: Build Nginx locally
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nginx
+          file: ./nginx/Dockerfile
+          load: true
+          tags: nginx:test
+
+      - name: Test the built images
+        run: |
+          cp docker-compose.test.yml docker-compose.test.local.yml
+          sed -i 's|ghcr.io/.*/app:.*|app:test|g' docker-compose.test.local.yml
+          sed -i 's|ghcr.io/.*/nginx:.*|nginx:test|g' docker-compose.test.local.yml
+          docker compose -f docker-compose.test.local.yml up -d
+          sleep 30
+          curl -f http://localhost/health || exit 1
+          docker compose -f docker-compose.test.local.yml down
+
+      - name: Convert repository name to lowercase
+        if: github.event_name != 'pull_request'
+        run: echo "REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -35,9 +64,10 @@ jobs:
 
       - name: Extract metadata for Go app
         id: meta-go
+        if: github.event_name != 'pull_request'
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWERCASE }}/app
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -47,10 +77,11 @@ jobs:
             type=sha
 
       - name: Build and push Go app
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: ./app
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta-go.outputs.tags }}
           labels: ${{ steps.meta-go.outputs.labels }}
           cache-from: type=gha
@@ -58,9 +89,10 @@ jobs:
 
       - name: Extract metadata for Nginx
         id: meta-nginx
+        if: github.event_name != 'pull_request'
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/nginx
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWERCASE }}/nginx
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -74,15 +106,6 @@ jobs:
           file: ./nginx/Dockerfile
           push: true
           tags: ${{ steps.meta-nginx.outputs.tags }}
-
-      - name: Convert repository name to lowercase
-        run: echo "REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Test the built ima  ges
-        run: |
-          export REGISTRY=ghcr.io
-          export TAG=sha-${{ github.sha }}
-          envsubst < docker-compose.test.yml | docker compose -f - up -d
-          sleep 30
-          curl -f http://localhost/health || exit 1
-          docker compose down
+          labels: ${{ steps.meta-nginx.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
