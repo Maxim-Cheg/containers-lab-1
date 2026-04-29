@@ -20,44 +20,47 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    app:
-  build:
-    context: ./app
-    dockerfile: Dockerfile
-  container_name: lab1-app
-  environment:
-    DB_HOST: postgres
-    DB_PORT: 5432
-    DB_USER: postgres
-    DB_PASSWORD: secret
-    DB_NAME: myapp
-    PORT: 8080
-  depends_on:
-    postgres:
-      condition: service_healthy
-  networks:
-    - app-network
-  healthcheck:
-    test: ["CMD", "wget", "--spider", "http://localhost:8080/health"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-nginx:
-  image: nginx:alpine
-  container_name: lab1-nginx
-  volumes:
-    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    - ./nginx/index.html:/usr/share/nginx/html/index.html:ro
-  ports:
-    - "80:80"
-  depends_on:
-    app:
-      condition: service_healthy
-  networks:
-    - app-network
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: lab1-app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: secret
+      DB_NAME: myapp
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: lab1-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
     name: lab1-postgres-data
+
 networks:
   app-network:
     name: lab1-network
