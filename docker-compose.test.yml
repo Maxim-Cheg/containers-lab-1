@@ -9,7 +9,7 @@ services:
       - test-network
 
   app:
-    image: ${REGISTRY}/${REPO_LOWERCASE}/app:${TAG}
+    image: ghcr.io/${{ github.repository }}/app:sha-${{ github.sha }}
     environment:
       DB_HOST: postgres
       DB_PASSWORD: secret
@@ -20,7 +20,7 @@ services:
       - test-network
 
   nginx:
-    image: ${REGISTRY}/${REPO_LOWERCASE}/nginx:${TAG}
+    image: ghcr.io/${{ github.repository }}/nginx:sha-${{ github.sha }}
     ports:
       - "80:80"
     depends_on:
